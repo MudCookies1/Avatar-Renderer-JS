@@ -1,5 +1,5 @@
 const fs = require("fs");
-const createGL = require("webgl-stub"); 
+const createGL = require("gl"); 
 const { PNG } = require("pngjs");
 const { mat4, vec3 } = require("gl-matrix");
 
