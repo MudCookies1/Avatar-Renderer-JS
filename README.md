@@ -6,7 +6,7 @@ For rendering ROBLOX avatars **WITHOUT** RCC service!
 ## HOW TO SET UP
 
 ### Resources needed:
-NodeJS
+NodeJS  
 A WebGL compatible device/browser
 ### NodeJS Packages:
 express  
