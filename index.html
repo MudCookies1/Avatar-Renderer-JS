@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NOVE Avatar Renderer</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: #fff; text-align: center; }
+    h1,h2 { color: #00ff88; }
+    .main-container { display: flex; justify-content: center; align-items: flex-start; gap: 40px; margin-top: 20px; }
+    .avatar-column { display: flex; flex-direction: column; align-items: center; }
+    
+    .body-customization { margin-top: 20px; width: 300px; }
+    .part-button-group { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 5px; 
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+    .part-button { 
+      flex-basis: calc(33.33% - 5px);
+      min-width: 80px;
+      background: #333; 
+      color: #fff; 
+      border: 1px solid #00ff88; 
+      padding: 8px 5px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: background 0.2s, color 0.2s; 
+      font-size: 13px;
+      line-height: 1.1;
+    }
+    .part-button:hover { background: #00ff8840; }
+    .part-button.active { background: #00ff88; color: #111; font-weight: bold; border-color: #00ff88; }
+
+    .color-palette-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      justify-content: center;
+      background: #222;
+    }
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.1s, transform 0.1s;
+    }
+    .color-swatch:hover {
+      transform: scale(1.05);
+    }
+    .color-swatch.selected {
+      border-color: #fff;
+      box-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+    }
+
+    .asset-section { display: flex; flex-direction: column; gap: 20px; }
+    
+    .asset-grid { 
+      display: flex; 
+      gap: 10px; 
+      overflow-x: auto; 
+      overflow-y: hidden; 
+      padding: 10px; 
+      justify-content: flex-start; 
+      width: 450px; 
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+    
+    .asset-grid::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .asset-grid::-webkit-scrollbar-thumb {
+        background: #00ff88;
+        border-radius: 10px;
+    }
+
+    .asset-grid::-webkit-scrollbar-track {
+        background: #333;
+        border-radius: 10px;
+    }
+    
+    .asset-item { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      cursor: pointer; 
+      flex-shrink: 0; 
+    }
+    
+    .asset-item img { width: 100px; height: 100px; border-radius: 8px; border: 2px solid transparent; object-fit: cover; transition: border 0.2s; }
+    .asset-item.selected img { border-color: #00ff88; } 
+    .asset-item span { margin-top: 5px; font-size: 14px; color: #00ff88; }
+    .no-asset-item { border: 2px dashed #444; border-radius: 8px; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: border 0.2s; }
+    .no-asset-item:hover { border-color: #00ff88; }
+    .no-asset-item.selected { border-color: #00ff88; }
+  </style>
+</head>
+<body>
+  <h1>NOVE Avatar Renderer</h1>
+  <div class="main-container">
+    <div class="avatar-column">
+      <h2>Avatar Preview</h2>
+      <img id="avatar" src="avatar.png?cacheBust=0" width="256" height="256" alt="Avatar Render">
+      
+      <div class="body-customization">
+        <h3>Body Color Chooser</h3>
+        <div class="part-button-group">
+          <button data-part="head" class="part-button active">Head</button>
+          <button data-part="torso" class="part-button">Torso</button>
+          <button data-part="leftArm" class="part-button">Left Arm</button>
+          <button data-part="rightArm" class="part-button">Right Arm</button>
+          <button data-part="leftLeg" class="part-button">Left Leg</button>
+          <button data-part="rightLeg" class="part-button">Right Leg</button>
+        </div>
+        <div id="colorPalette" class="color-palette-grid"></div>
+      </div>
+    </div>
+
+    <div class="asset-section">
+      <h2>Hats</h2>
+      <div id="hats" class="asset-grid"></div>
+
+      <h2>T-Shirts</h2>
+      <div id="tShirts" class="asset-grid"></div>
+
+      <h2>Faces</h2>
+      <div id="faces" class="asset-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    let hats = [], tShirts = [], faces = [];
+    let selectedHat = null;
+    let selectedShirt = null;
+    let selectedFace = null;
+    
+    let selectedColors = {
+        head: [0.949, 0.953, 0.953],
+        torso: [0.769, 0.157, 0.110],
+        leftArm: [0.051, 0.412, 0.675],
+        rightArm: [0.051, 0.412, 0.675],
+        leftLeg: [0.051, 0.412, 0.675],
+        rightLeg: [0.051, 0.412, 0.675]
+    };
+    let currentPartSelection = 'head';
+
+    const bodyColors = [
+        { name: "Dark stone grey", rgb: [99, 95, 98], dec: [0.388, 0.373, 0.384] },
+        { name: "Medium stone grey", rgb: [163, 162, 165], dec: [0.639, 0.635, 0.647] },
+        { name: "Light stone grey", rgb: [229, 228, 223], dec: [0.898, 0.894, 0.875] },
+        { name: "White", rgb: [242, 243, 243], dec: [0.949, 0.953, 0.953] },
+        { name: "Bright red", rgb: [196, 40, 28], dec: [0.769, 0.157, 0.110] },
+        { name: "Bright yellow", rgb: [245, 205, 48], dec: [0.961, 0.804, 0.188] },
+        { name: "Cool yellow", rgb: [253, 234, 141], dec: [0.992, 0.918, 0.553] },
+        { name: "Bright blue", rgb: [13, 105, 172], dec: [0.051, 0.412, 0.675] },
+        { name: "Medium blue", rgb: [110, 153, 202], dec: [0.431, 0.600, 0.792] },
+        { name: "Pastel Blue", rgb: [128, 187, 219], dec: [0.502, 0.733, 0.859] },
+        { name: "Light blue", rgb: [180, 210, 228], dec: [0.706, 0.824, 0.894] },
+        { name: "Sand blue", rgb: [116, 134, 157], dec: [0.455, 0.525, 0.616] },
+        { name: "Earth green", rgb: [39, 70, 45], dec: [0.153, 0.275, 0.176] },
+        { name: "Dark green", rgb: [40, 127, 71], dec: [0.157, 0.498, 0.278] },
+        { name: "Bright green", rgb: [75, 151, 75], dec: [0.294, 0.592, 0.294] },
+        { name: "Br. yellowish orange", rgb: [226, 155, 64], dec: [0.886, 0.608, 0.251] },
+        { name: "Sand green", rgb: [120, 144, 130], dec: [0.471, 0.565, 0.510] },
+        { name: "Dark orange", rgb: [160, 95, 53], dec: [0.627, 0.373, 0.208] },
+        { name: "Reddish brown", rgb: [105, 64, 40], dec: [0.412, 0.251, 0.157] },
+        { name: "Bright violet", rgb: [107, 50, 124], dec: [0.420, 0.196, 0.486] },
+        { name: "Black", rgb: [27, 42, 53], dec: [0.106, 0.165, 0.208] },
+        { name: "Bright bluish green", rgb: [0, 143, 156], dec: [0.000, 0.561, 0.612] },
+        { name: "Br. yellowish green", rgb: [164, 189, 71], dec: [0.643, 0.741, 0.278] },
+        { name: "Bright orange", rgb: [218, 133, 65], dec: [0.855, 0.522, 0.255] },
+        { name: "Light reddish violet", rgb: [232, 186, 200], dec: [0.910, 0.730, 0.784] },
+        { name: "Medium red", rgb: [218, 134, 122], dec: [0.855, 0.525, 0.478] },
+        { name: "Brick yellow", rgb: [215, 197, 154], dec: [0.843, 0.773, 0.604] },
+        { name: "Sand red", rgb: [149, 121, 119], dec: [0.584, 0.475, 0.467] },
+        { name: "Brown", rgb: [124, 92, 70], dec: [0.486, 0.361, 0.275] },
+        { name: "Nougat", rgb: [204, 142, 105], dec: [0.800, 0.557, 0.412] },
+        { name: "Light orange", rgb: [234, 184, 146], dec: [0.918, 0.722, 0.573] }
+    ];
+
+    async function fetchAssets() {
+      hats = await fetch("/listHats").then(r => r.json());
+      tShirts = await fetch("/listTShirts").then(r => r.json());
+      faces = await fetch("/listFaces").then(r => r.json());
+      
+      renderAssets();
+      renderColorPalette();
+      renderAvatar();
+    }
+
+    function colorMatch(color1, color2) {
+        return color1.every((val, i) => Math.abs(val - color2[i]) < 0.005);
+    }
+
+    function renderColorPalette() {
+        const paletteDiv = document.getElementById("colorPalette");
+        paletteDiv.innerHTML = '';
+        
+        const currentColor = selectedColors[currentPartSelection];
+
+        bodyColors.forEach(color => {
+            const swatch = document.createElement("div");
+            swatch.classList.add("color-swatch");
+            swatch.title = color.name;
+            swatch.style.backgroundColor = `rgb(${color.rgb.join(',')})`;
+            
+            if (colorMatch(currentColor, color.dec)) {
+                swatch.classList.add("selected");
+            }
+            
+            swatch.onclick = () => {
+                document.querySelectorAll('#colorPalette .color-swatch').forEach(s => s.classList.remove("selected"));
+                swatch.classList.add("selected");
+                
+                selectedColors[currentPartSelection] = color.dec;
+                renderAvatar();
+            };
+            paletteDiv.appendChild(swatch);
+        });
+    }
+
+    document.querySelectorAll('.part-button').forEach(button => {
+        button.onclick = (e) => {
+            document.querySelectorAll('.part-button').forEach(btn => btn.classList.remove("active"));
+            e.target.classList.add("active");
+            currentPartSelection = e.target.getAttribute('data-part');
+            renderColorPalette();
+        };
+    });
+
+    function createNoAssetElement(type, name = "None") {
+        const div = document.createElement("div");
+        div.classList.add("asset-item");
+        div.onclick = async () => {
+            document.querySelectorAll(`#${type} .asset-item`).forEach(el => el.classList.remove("selected"));
+            div.classList.add("selected");
+
+            if (type === "hats") selectedHat = null;
+            if (type === "tShirts") selectedShirt = null;
+            if (type === "faces") selectedFace = null;
+
+            renderAvatar();
+        };
+
+        const noneDiv = document.createElement("div");
+        noneDiv.classList.add("no-asset-item");
+        noneDiv.textContent = name;
+        div.appendChild(noneDiv);
+        
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = name;
+        div.appendChild(nameSpan);
+
+        return div;
+    }
+
+    function createAssetElement(item, type) {
+      const div = document.createElement("div");
+      div.classList.add("asset-item");
+      const img = document.createElement("img");
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = item.name;
+      
+      if(type === "hats") {
+          img.src = item.preview;
+      }
+      else {
+          img.src = item.texture;
+      }
+
+      div.appendChild(img);
+      div.appendChild(nameSpan);
+
+      div.onclick = async () => {
+        const isSelected = div.classList.contains("selected");
+        document.querySelectorAll(`#${type} .asset-item`).forEach(el => el.classList.remove("selected"));
+
+        if (!isSelected) {
+          div.classList.add("selected");
+          if (type === "hats") selectedHat = item;
+          if (type === "tShirts") selectedShirt = item;
+          if (type === "faces") selectedFace = item;
+        } else {
+            if (type === "hats") selectedHat = null;
+            if (type === "tShirts") selectedShirt = null;
+            if (type === "faces") selectedFace = null;
+            
+            const noneElement = document.querySelector(`#${type} .asset-item:has(.no-asset-item)`);
+            if (noneElement) {
+                noneElement.classList.add("selected");
+            }
+        }
+        
+        renderAvatar();
+      };
+      return div;
+    }
+
+    function renderAssets() {
+      const hatsDiv = document.getElementById("hats");
+      hatsDiv.innerHTML = "";
+      const noHat = createNoAssetElement("hats", "None"); 
+      noHat.classList.add("selected");
+      hatsDiv.appendChild(noHat);
+      hats.forEach(h => hatsDiv.appendChild(createAssetElement(h, "hats")));
+
+      const shirtsDiv = document.getElementById("tShirts");
+      shirtsDiv.innerHTML = "";
+      const noShirt = createNoAssetElement("tShirts", "None"); 
+      noShirt.classList.add("selected");
+      shirtsDiv.appendChild(noShirt);
+      tShirts.forEach(s => shirtsDiv.appendChild(createAssetElement(s, "tShirts")));
+
+      const facesDiv = document.getElementById("faces");
+      facesDiv.innerHTML = "";
+      const defaultFace = createNoAssetElement("faces", "Default"); 
+      defaultFace.classList.add("selected");
+      facesDiv.appendChild(defaultFace);
+      faces.forEach(f => facesDiv.appendChild(createAssetElement(f, "faces")));
+      
+      if (selectedFace == null) {
+          document.querySelector('#faces .asset-item:has(.no-asset-item)').classList.add("selected");
+      }
+      if (selectedShirt == null) {
+          document.querySelector('#tShirts .asset-item:has(.no-asset-item)').classList.add("selected");
+      }
+      if (selectedHat == null) {
+          document.querySelector('#hats .asset-item:has(.no-asset-item)').classList.add("selected");
+      }
+    }
+
+    async function renderAvatar() {
+      const newAssets = {
+        headObj: "./assets/head.obj",
+        hatObj: selectedHat ? selectedHat.mesh : null,
+        headTexture: selectedFace ? selectedFace.texture : "./publicAssets/faces/face.png", 
+        torsoTexture: selectedShirt ? selectedShirt.texture : "./assets/noShirt.png"
+      };
+      
+      const resp = await fetch("/updateAvatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          assets: newAssets,
+          colors: selectedColors
+        })
+      });
+      const data = await resp.json();
+      document.getElementById("avatar").src = "avatar.png?cacheBust=" + data.cacheBust;
+    }
+
+    fetchAssets();
+  </script>
+</body>
+</html>

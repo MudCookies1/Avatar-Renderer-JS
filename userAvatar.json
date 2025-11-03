@@ -1,0 +1,73 @@
+{
+  "outputFile": "avatar.png",
+  "canvas": {
+    "width": 512,
+    "height": 512
+  },
+  "assets": {
+    "headObj": "./assets/head.obj",
+    "hatObj": null,
+    "headTexture": "./publicAssets/faces/super happy.png",
+    "torsoTexture": "./publicAssets/tShirts/MikedShirtM.png"
+  },
+  "colors": {
+    "head": [
+      0.961,
+      0.804,
+      0.188
+    ],
+    "torso": [
+      0.769,
+      0.157,
+      0.11
+    ],
+    "leftArm": [
+      0.961,
+      0.804,
+      0.188
+    ],
+    "rightArm": [
+      0.961,
+      0.804,
+      0.188
+    ],
+    "leftLeg": [
+      0,
+      0.561,
+      0.612
+    ],
+    "rightLeg": [
+      0,
+      0.561,
+      0.612
+    ]
+  },
+  "decals": {
+    "head": "./publicAssets/faces/face.png",
+    "torso": "./publicAssets/tShirts/nove.png"
+  },
+  "hat": {
+    "mesh": "./publicAssets/hatAssets/viking.obj",
+    "texture": "./publicAssets/hatAssets/viking.png",
+    "scale": [
+      1,
+      1,
+      1
+    ],
+    "position": [
+      0,
+      0.8,
+      0
+    ],
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "color": [
+      1,
+      1,
+      1
+    ]
+  }
+}
