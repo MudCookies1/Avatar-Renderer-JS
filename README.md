@@ -9,12 +9,12 @@ For rendering ROBLOX avatars **WITHOUT** RCC service!
 NodeJS
 A WebGL compatible device/browser
 ### NodeJS Packages:
-express \n
-fs \n
-path \n
-gl \n
-gl-matrix \n
-pngjs
+express  
+fs  
+path  
+gl  
+gl-matrix  
+pngjs  
 ...Or you can use this command to auto-install all of these:
 `npm install express fs path gl gl-matrix pngjs`
 
